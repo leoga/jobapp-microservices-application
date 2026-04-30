@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: eureka-service
+
+server:
+  port: 8761
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "prometheus,health"
+  tracing:
+    sampling:
+      probability: 1.0 # It means that it will capture 100% of the requests. This should be 10% or 20% (0.1 or 0.2)
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+
+logging:
+  level:
+    root: INFO #(TRACE, DEBUG, INFO, WARN, ERROR)
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 5MB
+      max-history: 7 # It stores them for 7 days

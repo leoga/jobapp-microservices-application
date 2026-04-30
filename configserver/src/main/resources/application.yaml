@@ -1,0 +1,60 @@
+spring:
+  application:
+    name: configserver
+  profiles:
+    active: native
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/leoga/app-configuration
+          search-paths:
+            - jobapp-microservices
+        native:
+          search-locations: file:///C:\Users\leoga\Formación\Proyectos\Course 1\jobapp-microservices\configserver\src\main\resources\config
+
+
+    bus:
+      destination: springCloudBus
+    stream:
+      defaultBinder: kafka
+      bindings:
+        springCloudBusInput:
+          destination: springCloudBus
+          group: config-server
+          consumer:
+            max-attempts: 3
+        springCloudBusOutput:
+          destination: springCloudBus
+      kafka:
+        binder:
+          brokers: localhost:9092
+          autoCreateTopics: true
+  kafka:
+    consumer:
+      enable-auto-commit: false
+      auto-offset-reset: latest
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "busrefresh,prometheus,health"
+  tracing:
+    sampling:
+      probability: 1.0 # It means that it will capture 100% of the requests. This should be 10% or 20% (0.1 or 0.2)
+
+server:
+  port: 8888
+
+logging:
+  level:
+    root: INFO #(TRACE, DEBUG, INFO, WARN, ERROR)
+    org.apache.kafka.clients.consumer.internals.OffsetFetcherUtils: ERROR
+    org.apache.kafka.clients.NetworkClient: ERROR
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 5MB
+      max-history: 7 # It stores them for 7 days

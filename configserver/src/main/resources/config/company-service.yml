@@ -1,0 +1,73 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/company
+    username: "leoga"
+    password: "leoga"
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+  cloud:
+    function:
+      definition: reviewCreated
+    bus:
+      destination: springCloudBus
+    stream:
+      defaultBinder: kafka
+      bindings:
+        reviewCreated-in-0:
+          destination: rating-topic
+          group: company-group
+          content-type: application/json
+
+        springCloudBusInput:
+          destination: springCloudBus
+          group: company-service
+          consumer:
+            max-attempts: 3
+        springCloudBusOutput:
+          destination: springCloudBus
+      kafka:
+        binder:
+          brokers: localhost:9092
+          autoCreateTopics: true
+  kafka:
+    consumer:
+      enable-auto-commit: false
+      auto-offset-reset: latest
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "busrefresh, prometheus"
+  tracing:
+    sampling:
+      probability: 1.0
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+
+logging:
+  level:
+    root: INFO #(TRACE, DEBUG, INFO, WARN, ERROR)
+    org.apache.kafka.clients.consumer.internals.OffsetFetcherUtils: ERROR
+    org.apache.kafka.clients.NetworkClient: ERROR
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 5MB
+      max-history: 7 # It stores them for 7 days

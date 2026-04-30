@@ -1,0 +1,80 @@
+spring:
+#SECURITY
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8443/realms/job-app
+
+  cloud:
+    bus:
+      destination: springCloudBus
+    stream:
+      defaultBinder: kafka
+      bindings:
+        springCloudBusInput:
+          destination: springCloudBus
+          group: gateway-service
+          consumer:
+            max-attempts: 3
+        springCloudBusOutput:
+          destination: springCloudBus
+      kafka:
+        binder:
+          brokers: localhost:9092
+          autoCreateTopics: true
+  kafka:
+    consumer:
+      enable-auto-commit: false
+      auto-offset-reset: latest
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "busrefresh,prometheus,circuitbreakers,circuitbreakerevents"
+  tracing:
+    sampling:
+      probability: 1.0 # It means that it will capture 100% of the requests. This should be 10% or 20% (0.1 or 0.2)
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+logging:
+  level:
+    root: INFO #(TRACE, DEBUG, INFO, WARN, ERROR)
+    org.apache.kafka.clients.consumer.internals.OffsetFetcherUtils: ERROR
+    org.apache.kafka.clients.NetworkClient: ERROR
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 5MB
+      max-history: 7 # It stores them for 7 days
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+
+# Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      jobappBreaker:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        automatic-transition-from-open-to-half-open-enabled: true
+        sliding-window-type: count_based

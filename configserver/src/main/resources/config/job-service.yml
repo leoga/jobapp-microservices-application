@@ -1,0 +1,98 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/job
+    username: "leoga"
+    password: "leoga"
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
+
+  cloud:
+    bus:
+      destination: springCloudBus
+    stream:
+      defaultBinder: kafka
+      bindings:
+        springCloudBusInput:
+          destination: springCloudBus
+          group: job-service
+          consumer:
+            max-attempts: 3
+        springCloudBusOutput:
+          destination: springCloudBus
+      kafka:
+        binder:
+          brokers: localhost:9092
+          autoCreateTopics: true
+  kafka:
+    consumer:
+      enable-auto-commit: false
+      auto-offset-reset: latest
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "busrefresh, prometheus, circuitbreakers, circuitbreakerevents"
+  tracing:
+    sampling:
+      probability: 1.0
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka
+    register-with-eureka: true
+    fetch-registry: true
+
+logging:
+  level:
+    root: INFO #(TRACE, DEBUG, INFO, WARN, ERROR)
+    org.apache.kafka.clients.consumer.internals.OffsetFetcherUtils: ERROR
+    org.apache.kafka.clients.NetworkClient: ERROR
+  file:
+    name: logs/${spring.application.name}.log
+  logback:
+    rollingpolicy:
+      max-file-size: 5MB
+      max-history: 7 # It stores them for 7 days
+
+# Circuit Breaker
+resilience4j:
+  circuitbreaker:
+    instances:
+      companyService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        automatic-transition-from-open-to-half-open-enabled: true
+        sliding-window-type: count_based
+  retry:
+    instances:
+      retryBreaker:
+        max-attempts: 5
+        wait-duration: 500ms
+  ratelimiter:
+    instances:
+      rateBreaker:
+        timeout-duration: 0
+        limit-refresh-period: 4s
+        limit-for-period: 2
