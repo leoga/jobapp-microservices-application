@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: config-server
+  namespace: jobapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: config-server
+  template:
+    metadata:
+      labels:
+        app: config-server
+    spec:
+      initContainers:
+        - name: wait-kafka
+          image: busybox
+          command: [ 'sh','-c','until nc -z kafka-broker 9092; do sleep 5; done' ]
+      containers:
+        - name: config-server
+          image: {{ .Values.configserver.image }}
+          ports:
+            - containerPort: {{ .Values.configserver.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: config-server
+  namespace: jobapp
+  labels:
+    app: config-server
+    application: config-server
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.configserver.port }}
+  selector:
+    app: config-server

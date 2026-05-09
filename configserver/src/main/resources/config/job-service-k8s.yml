@@ -1,16 +1,17 @@
-services-url:
-  company-url: lb://COMPANY-SERVICE
-  job-url: lb://JOB-SERVICE
-  review-url: lb://REVIEW-SERVICE
-  environment: localhost
-
 spring:
-#SECURITY
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8443/realms/job-app
+  datasource:
+    url: jdbc:postgresql://postgres-postgresql:5432/job
+    username: "leoga"
+    password: "leoga"
+  jpa:
+    database: POSTGRESQL
+    show-sql: true
+    hibernate:
+      ddl-auto: update
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: true
 
   cloud:
     bus:
@@ -20,14 +21,14 @@ spring:
       bindings:
         springCloudBusInput:
           destination: springCloudBus
-          group: gateway-service
+          group: job-service
           consumer:
             max-attempts: 3
         springCloudBusOutput:
           destination: springCloudBus
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: kafka-broker:9092
           autoCreateTopics: true
   kafka:
     consumer:
@@ -35,22 +36,32 @@ spring:
       auto-offset-reset: latest
 
 server:
-  port: 8080
+  port: 8081
 
 management:
   endpoints:
     web:
       exposure:
-        include: "busrefresh,prometheus,circuitbreakers,circuitbreakerevents"
+        include: "busrefresh, prometheus, circuitbreakers, circuitbreakerevents"
   tracing:
     sampling:
-      probability: 1.0 # It means that it will capture 100% of the requests. This should be 10% or 20% (0.1 or 0.2)
+      probability: 1.0
+    export:
+      zipkin:
+        endpoint: ${ZIPKIN_URL:http://zipkin.moitoring:9411/api/v2/spans}
   endpoint:
     health:
       show-details: always
   health:
     circuitbreakers:
       enabled: true
+
+eureka:
+  client:
+#    serviceUrl:
+#      defaultZone: http://eureka:8761/eureka
+    register-with-eureka: false
+    fetch-registry: false
 
 logging:
   level:
@@ -64,18 +75,11 @@ logging:
       max-file-size: 5MB
       max-history: 7 # It stores them for 7 days
 
-eureka:
-  client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
-    register-with-eureka: true
-    fetch-registry: true
-
 # Circuit Breaker
 resilience4j:
   circuitbreaker:
     instances:
-      jobappBreaker:
+      companyService:
         register-health-indicator: true
         sliding-window-size: 10
         minimum-number-of-calls: 5
@@ -84,3 +88,14 @@ resilience4j:
         failure-rate-threshold: 50
         automatic-transition-from-open-to-half-open-enabled: true
         sliding-window-type: count_based
+  retry:
+    instances:
+      retryBreaker:
+        max-attempts: 5
+        wait-duration: 500ms
+  ratelimiter:
+    instances:
+      rateBreaker:
+        timeout-duration: 0
+        limit-refresh-period: 4s
+        limit-for-period: 2

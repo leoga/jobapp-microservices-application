@@ -1,0 +1,4 @@
+apiVersion: v2
+name: jobapp
+version: 0.1.0
+description: JobApp microservices

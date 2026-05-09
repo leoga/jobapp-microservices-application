@@ -1,16 +1,21 @@
 services-url:
-  company-url: lb://COMPANY-SERVICE
-  job-url: lb://JOB-SERVICE
-  review-url: lb://REVIEW-SERVICE
-  environment: localhost
+  company-url: http://company-service
+  job-url: http://job-service
+  review-url: http://review-service
+  environment: kubernetes
 
 spring:
-#SECURITY
+# SECURITY
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8443/realms/job-app
+          jwk-set-uri: http://keycloak:8080/realms/job-app/protocol/openid-connect/certs
+  data:
+    redis:
+      host: redis-master
+      port: 6379
 
   cloud:
     bus:
@@ -27,7 +32,7 @@ spring:
           destination: springCloudBus
       kafka:
         binder:
-          brokers: localhost:9092
+          brokers: kafka-broker:9092
           autoCreateTopics: true
   kafka:
     consumer:
@@ -45,6 +50,9 @@ management:
   tracing:
     sampling:
       probability: 1.0 # It means that it will capture 100% of the requests. This should be 10% or 20% (0.1 or 0.2)
+    export:
+      zipkin:
+        endpoint: ${ZIPKIN_URL:http://zipkin.monitoring:9411/api/v2/spans}
   endpoint:
     health:
       show-details: always
@@ -66,10 +74,10 @@ logging:
 
 eureka:
   client:
-    serviceUrl:
-      defaultZone: http://localhost:8761/eureka
-    register-with-eureka: true
-    fetch-registry: true
+#    serviceUrl:
+#      defaultZone: http://eureka:8761/eureka
+    register-with-eureka: false
+    fetch-registry: false
 
 # Circuit Breaker
 resilience4j:

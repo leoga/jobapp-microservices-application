@@ -1,0 +1,12 @@
+auth:
+  username: leoga
+  password: leoga
+  database: postgres
+
+primary:
+  initdb:
+    scripts:
+      init.sql: |
+        CREATE DATABASE company;
+        CREATE DATABASE job;
+        CREATE DATABASE review;

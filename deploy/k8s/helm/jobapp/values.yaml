@@ -1,0 +1,19 @@
+gateway:
+  image: leogatf/jobapp-gateway:latest
+  port: 8080
+
+configserver:
+  image: leogatf/jobapp-config-server:latest
+  port: 8888
+
+company:
+  image: leogatf/company:latest
+  port: 8082
+
+job:
+  image: leogatf/job:latest
+  port: 8081
+
+review:
+  image: leogatf/review:latest
+  port: 8083

@@ -1,0 +1,16 @@
+kafka:
+  image: confluentinc/cp-kafka
+  tag: latest
+  brokerPort: 9092
+  controllerPort: 9093
+
+keycloak:
+  image: quay.io/keycloak/keycloak
+  tag: 26.5.6
+  port: 8080
+  adminUser: admin
+  adminPassword: admin
+
+  persistence:
+    enabled: true
+    size: 1Gi

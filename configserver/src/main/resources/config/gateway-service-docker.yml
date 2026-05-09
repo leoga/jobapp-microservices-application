@@ -1,3 +1,9 @@
+services-url:
+  company-url: lb://COMPANY-SERVICE
+  job-url: lb://JOB-SERVICE
+  review-url: lb://REVIEW-SERVICE
+  environment: docker
+
 spring:
 # SECURITY
   security:

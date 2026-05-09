@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: jobapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      initContainers:
+        - name: wait-config
+          image: busybox
+          command: ['sh','-c','until wget -qO- http://config-server/actuator/health; do sleep 5; done']
+
+        - name: wait-kafka
+          image: busybox
+          command: [ 'sh','-c','until nc -z kafka-broker 9092; do sleep 5; done' ]
+      containers:
+        - name: gateway
+          image: {{ .Values.gateway.image }}
+          ports:
+            - containerPort: {{ .Values.gateway.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s,gitk8s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: jobapp
+  labels:
+    app: gateway
+    application: gateway
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.gateway.port }}
+  selector:
+    app: gateway

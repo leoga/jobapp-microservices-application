@@ -38,7 +38,7 @@ public interface JobMapper {
                                       @Context ReviewServiceClient reviewClient) {
 
         if (null != job.getCompanyId()) {
-            CompanyResponse companyResponse = companyClient.getCompanyById(job.getCompanyId());
+            CompanyResponse companyResponse = companyClient.getCompanyById(job.getCompanyId()).get();
             List<ReviewResponse> reviews = reviewClient.getReviews(companyResponse.getId());
             companyResponse.setReviews(reviews);
             jobResponse.setCompany(companyResponse);

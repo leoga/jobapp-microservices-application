@@ -1,5 +1,7 @@
 package com.leoga.jobapp.gateway;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.cloud.gateway.filter.ratelimit.RedisRateLimiter;
 import org.springframework.cloud.gateway.route.RouteLocator;
@@ -11,6 +13,13 @@ import reactor.core.publisher.Mono;
 
 @Configuration
 public class GatewayConfig {
+
+    private final ServicesUrl servicesUrl;
+    private static final Logger logger = LoggerFactory.getLogger(GatewayConfig.class);
+
+    public GatewayConfig(ServicesUrl servicesUrl) {
+        this.servicesUrl = servicesUrl;
+    }
 
     @Bean
     public RedisRateLimiter redisRateLimiter() {
@@ -24,6 +33,7 @@ public class GatewayConfig {
 
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
+        logger.info("Environment in use: {}", servicesUrl.getEnvironment());
         return builder.routes()
                 .route("company-service" , r -> r
                         .path("/companies/**")
@@ -39,13 +49,13 @@ public class GatewayConfig {
                                 .circuitBreaker(config -> config
                                 .setName("jobappBreaker")
                                 .setFallbackUri("forward:/fallback/companies")))
-                        .uri("lb://COMPANY-SERVICE"))
+                        .uri(servicesUrl.getCompanyUrl()))
                 .route("job-service" , r -> r
                         .path("/jobs/**")
-                        .uri("lb://JOB-SERVICE"))
+                        .uri(servicesUrl.getJobUrl()))
                 .route("review-service" , r -> r
                         .path("/reviews/**")
-                        .uri("lb://REVIEW-SERVICE"))
+                        .uri(servicesUrl.getReviewUrl()))
                 .route("eureka-server", r -> r
                         .path("/eureka/main")
                         .filters(f -> f.rewritePath("/eureka/main", "/"))

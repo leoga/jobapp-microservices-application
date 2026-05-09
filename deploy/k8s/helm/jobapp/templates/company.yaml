@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: company
+  namespace: jobapp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: company
+  template:
+    metadata:
+      labels:
+        app: company
+    spec:
+      initContainers:
+        - name: wait-config
+          image: busybox
+          command: ['sh','-c','until wget -qO- http://config-server/actuator/health; do sleep 5; done']
+
+        - name: wait-postgres
+          image: busybox
+          command: ['sh','-c','until nc -z postgres-postgresql 5432; do sleep 5; done']
+
+        - name: wait-kafka
+          image: busybox
+          command: ['sh','-c','until nc -z kafka-broker 9092; do sleep 5; done']
+      containers:
+        - name: company
+          image: {{ .Values.company.image }}
+          ports:
+            - containerPort: {{ .Values.company.port }}
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: k8s,gitk8s
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: company-service
+  namespace: jobapp
+  labels:
+    app: company
+    application: company-service
+spec:
+  type: NodePort
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.company.port }}
+  selector:
+    app: company

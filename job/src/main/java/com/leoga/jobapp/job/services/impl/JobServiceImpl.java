@@ -38,9 +38,9 @@ public class JobServiceImpl implements JobService {
     @Override
     public JobResponse createJob(JobRequest jobRequest) {
 
-        CompanyResponse company= companyClient.getCompanyById(jobRequest.getCompanyId());
+        Optional<CompanyResponse> companyOpt= companyClient.getCompanyById(jobRequest.getCompanyId());
 
-        if (null == company) {
+        if (companyOpt.isEmpty()) {
             return null;
         }
 
