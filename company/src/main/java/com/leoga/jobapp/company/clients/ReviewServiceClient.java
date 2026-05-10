@@ -9,5 +9,5 @@ import org.springframework.web.service.annotation.HttpExchange;
 public interface ReviewServiceClient {
 
     @GetExchange("/averageRating")
-    Double getAverageReview(@RequestParam Long companyId);
+    Double getAverageRating(@RequestParam Long companyId);
 }

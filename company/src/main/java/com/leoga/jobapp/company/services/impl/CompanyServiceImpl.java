@@ -63,7 +63,7 @@ public class CompanyServiceImpl implements CompanyService {
         Company company = companyRepository.findById(reviewCreatedEvent.getCompanyId())
                 .orElseThrow(() -> new NotFoundException("Company not found" + reviewCreatedEvent.getCompanyId()));
 
-        Double averageRating = reviewServiceClient.getAverageReview(reviewCreatedEvent.getCompanyId());
+        Double averageRating = reviewServiceClient.getAverageRating(reviewCreatedEvent.getCompanyId());
         company.setRating(Math.round(averageRating * 100.0) / 100.0);
         companyRepository.save(company);
     }
@@ -73,7 +73,7 @@ public class CompanyServiceImpl implements CompanyService {
         Company company = companyRepository.findById(id).orElse(null);
         if (null == company) return false;
 
-        Double averageRating = reviewServiceClient.getAverageReview(id);
+        Double averageRating = reviewServiceClient.getAverageRating(id);
         company.setRating(Math.round(averageRating * 100.0) / 100.0);
         companyRepository.save(company);
         return true;

@@ -50,7 +50,7 @@ public class ReviewController {
     }
 
     @GetMapping("/averageRating")
-    public Double getAverageReview(@RequestParam Long companyId){
+    public Double getAverageRating(@RequestParam Long companyId){
         List<ReviewResponse> reviewList = reviewService.getReviews(companyId);
         return reviewList.stream().mapToDouble(ReviewResponse::getRating).average()
                 .orElse(0.0);
