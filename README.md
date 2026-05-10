@@ -78,8 +78,8 @@ This project follows a microservices architecture where each service is independ
 ### Core architecture components
 
 - **API Gateway**: Central entry point for routing, filtering, and security
-- **Service Discovery**: Dynamic service registration and lookup using Eureka
-- **Centralized Configuration**: Externalized configuration managed via Spring Cloud Config (configuration loaded from an external configuration repository)
+- **Service Discovery**: Dynamic service registration and discovery using Eureka
+- **Centralized Configuration**: Externalized configuration managed via Spring Cloud Config (configuration loaded from an external configuration [repository](https://github.com/leoga/app-configuration/tree/main/jobapp-microservices))
 - **Event-Driven Communication**: Asynchronous messaging using Apache Kafka
 - **Dynamic Configuration Updates**: Spring Cloud Bus powered by Kafka
 - **Database per Service**: PostgreSQL ensuring loose coupling
@@ -87,16 +87,21 @@ This project follows a microservices architecture where each service is independ
 - **Resilience**: Fault tolerance using Resilience4j (circuit breaker, rate limiter, retry)
 - **Observability**:
   - Metrics via Prometheus
-  - Centralized logging with Loki + Promtail
+  - Centralized logging with Loki and Promtail
   - Distributed tracing via Zipkin
   - Visualization through Grafana dashboards
 - **Containerization**: Full Docker-based deployment
 - **Kubernetes Support**:
   - Helm-based deployment
-  - ServiceMonitor integration
+  - ServiceMonitor integration for Prometheus
   - Automated deployment scripts
-  - Namespace separation
+  - Namespace isolation
   - Native Kubernetes service discovery
+
+### Additional Resources
+
+- Keycloak realm backup included
+- Postman collection included for endpoint testing
 
 ## 📦 Deployment Structure
 
@@ -401,7 +406,7 @@ After importing the realm backup, create a user with the admin role.
 
 ## 📚 API Documentation
 
-For more details about available endpoints, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md) (Pending)
+For more details about available endpoints, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 ## 🧩 Architecture Diagram
 
