@@ -80,19 +80,19 @@ This project follows a microservices architecture where each service is independ
 - **API Gateway**: Central entry point for routing, filtering, and security
 - **Service Discovery**: Dynamic service registration and discovery using Eureka
 - **Centralized Configuration**: Externalized configuration managed via Spring Cloud Config (configuration loaded from an external configuration [repository](https://github.com/leoga/app-configuration/tree/main/jobapp-microservices))
-- **Event-Driven Communication**: Asynchronous messaging using Apache Kafka
+- **Event-Driven Communication**: Asynchronous communication using Apache Kafka
 - **Dynamic Configuration Updates**: Spring Cloud Bus powered by Kafka
-- **Database per Service**: PostgreSQL ensuring loose coupling
-- **Security**: OAuth2 authentication via Keycloak (PKCE flow)
-- **Resilience**: Fault tolerance using Resilience4j (circuit breaker, rate limiter, retry)
+- **Database per Service**: PostgreSQL database dedicated to each microservice to ensure loose coupling
+- **Security**: OAuth2 authentication and authorization using Keycloak with PKCE flow
+- **Resilience**: Fault tolerance implemented with Resilience4j (Circuit Breaker, Retry, and Rate Limiter patterns)
 - **Observability**:
   - Metrics via Prometheus
   - Centralized logging with Loki and Promtail
   - Distributed tracing via Zipkin
-  - Visualization through Grafana dashboards
-- **Containerization**: Full Docker-based deployment
+  - Monitoring dashboards with Grafana
+- **Containerization**: Full Docker-based environment
 - **Kubernetes Support**:
-  - Helm-based deployment
+  - Helm chart deployment
   - ServiceMonitor integration for Prometheus
   - Automated deployment scripts
   - Namespace isolation
