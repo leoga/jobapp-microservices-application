@@ -7,8 +7,10 @@ set -e
 # =========================
 
 MODE="docker"
-SKIP_BUILD=false
 FORCE_BUILD=false
+
+# Usuario Docker Hub por defecto
+DOCKERHUB_USER="${DOCKERHUB_USER:-leogatf}"
 
 # Primer argumento: modo (docker/jib)
 if [[ "$1" == "docker" || "$1" == "jib" ]]; then
@@ -19,10 +21,6 @@ fi
 # Flags adicionales
 for arg in "$@"; do
   case $arg in
-    --skipbuild)
-      SKIP_BUILD=true
-      shift
-      ;;
     --forcebuild)
       FORCE_BUILD=true
       shift
@@ -34,14 +32,46 @@ for arg in "$@"; do
   esac
 done
 
+# =========================
+# Docker Hub user (solo jib)
+# =========================
+
+if [ "$MODE" == "jib" ]; then
+  echo ""
+  read -p "🐳 Docker Hub username [${DOCKERHUB_USER}]: " INPUT_USER
+
+  if [ -n "$INPUT_USER" ]; then
+    export DOCKERHUB_USER="$INPUT_USER"
+  else
+    export DOCKERHUB_USER="$DOCKERHUB_USER"
+  fi
+
+  echo "✔ Using Docker Hub user: $DOCKERHUB_USER"
+
+  # =========================
+  # Docker login check
+  # =========================
+
+  echo "🔐 Checking Docker Hub login..."
+
+  if ! docker info 2>/dev/null | grep -q "Username"; then
+    echo "⚠️ Not logged into Docker Hub"
+    docker login
+  else
+    echo "✔ Docker Hub login detected"
+  fi
+fi
+
+echo ""
 echo "🚀 Starting JobApp environment..."
 echo "Mode: $MODE"
-echo "Skip build: $SKIP_BUILD"
+echo "Docker Hub user: $DOCKERHUB_USER"
 echo "Force build: $FORCE_BUILD"
 
 # =========================
 # 1. Prerequisites
 # =========================
+
 echo "🔍 Checking prerequisites..."
 
 command -v kubectl >/dev/null || { echo "kubectl not installed"; exit 1; }
@@ -52,6 +82,7 @@ command -v minikube >/dev/null || { echo "minikube not installed"; exit 1; }
 # =========================
 # 2. Minikube
 # =========================
+
 echo "🐳 Checking Minikube..."
 
 if ! minikube status | grep -q "Running"; then
@@ -65,62 +96,61 @@ eval $(minikube docker-env)
 # =========================
 # 3. Image mapping
 # =========================
+
 declare -A IMAGES
 
-IMAGES["configserver"]="leogatf/jobapp-config-server"
-IMAGES["gateway"]="leogatf/jobapp-gateway"
-IMAGES["company"]="leogatf/company"
-IMAGES["job"]="leogatf/job"
-IMAGES["review"]="leogatf/review"
+IMAGES["configserver"]="${DOCKERHUB_USER}/jobapp-config-server"
+IMAGES["gateway"]="${DOCKERHUB_USER}/jobapp-gateway"
+IMAGES["company"]="${DOCKERHUB_USER}/company"
+IMAGES["job"]="${DOCKERHUB_USER}/job"
+IMAGES["review"]="${DOCKERHUB_USER}/review"
 
 SERVICES=("configserver" "gateway" "company" "job" "review")
 
 # =========================
 # 4. Build images
 # =========================
+
 image_exists() {
   docker image inspect "$1:latest" >/dev/null 2>&1
 }
 
-if [ "$SKIP_BUILD" = false ]; then
-  echo "🔨 Building images..."
+echo "🔨 Checking/building images..."
 
-  cd ../..
+cd ../..
 
-  for s in "${SERVICES[@]}"; do
-    IMAGE=${IMAGES[$s]}
+for s in "${SERVICES[@]}"; do
+  IMAGE=${IMAGES[$s]}
 
-    echo ""
-    echo "👉 Service: $s"
-    echo "   Image:   $IMAGE"
+  echo ""
+  echo "👉 Service: $s"
+  echo "   Image:   $IMAGE"
 
-    if [ "$FORCE_BUILD" = false ] && image_exists "$IMAGE"; then
-      echo "   ✔ Image exists → skipping"
-      continue
-    fi
+  if [ "$FORCE_BUILD" = false ] && image_exists "$IMAGE"; then
+    echo "   ✔ Image exists → skipping"
+    continue
+  fi
 
-    if [ "$FORCE_BUILD" = true ]; then
-      echo "   ♻️ Force build enabled → rebuilding"
-    else
-      echo "   🔨 Building..."
-    fi
+  if [ "$FORCE_BUILD" = true ]; then
+    echo "   ♻️ Force build enabled → rebuilding"
+  else
+    echo "   🔨 Image not found → building"
+  fi
 
-    cd $s
+  cd $s
 
-    if [ "$MODE" == "docker" ]; then
-      ./mvnw clean compile jib:dockerBuild
-    else
-      ./mvnw clean compile jib:build
-    fi
+  if [ "$MODE" == "docker" ]; then
+    ./mvnw clean compile jib:dockerBuild \
+      -Dimage="$IMAGE"
+  else
+    ./mvnw clean compile jib:build \
+      -Dimage="$IMAGE"
+  fi
 
-    cd ..
-  done
+  cd ..
+done
 
-  cd deploy/k8s
-
-else
-  echo "⏭ Skipping build phase"
-fi
+cd deploy/k8s
 
 # =========================
 # 5. Namespaces
@@ -149,7 +179,7 @@ echo "🧱 Deploying infrastructure..."
 
 helm upgrade --install postgres bitnami/postgresql \
   -n jobapp \
-  -f helm/infra/Postgres-values.yaml
+  -f helm/infra/postgres-values.yaml
 
 helm upgrade --install redis bitnami/redis \
   -n jobapp
@@ -178,27 +208,8 @@ helm upgrade --install zipkin zipkin/zipkin \
   -n monitoring
 
 helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
-  -n monitoring \
-  --set grafana.additionalDataSources[0].name=Loki \
-  --set grafana.additionalDataSources[0].type=loki \
-  --set grafana.additionalDataSources[0].url=http://loki:3100 \
-  --set grafana.additionalDataSources[0].isDefault=false \
-  --set grafana.additionalDataSources[1].name=Zipkin \
-  --set grafana.additionalDataSources[1].type=zipkin \
-  --set grafana.additionalDataSources[1].url=http://zipkin:9411 \
-  --set grafana.additionalDataSources[1].isDefault=false \
-  --set prometheus.prometheusSpec.retention=6h \
-  --set prometheus.prometheusSpec.resources.requests.memory=512Mi \
-  --set prometheus.prometheusSpec.resources.limits.memory=1Gi \
-  --set grafana.resources.requests.memory=256Mi \
-  --set grafana.resources.limits.memory=512Mi \
-  --set grafana.grafana.ini.auth.anonymous.enabled=true \
-  --set grafana.grafana.ini.auth.anonymous.org_role=Admin \
-  --set grafana.grafana.ini.auth.disable_login_form=true \
-  --set grafana.grafana.ini.auth.basic.enabled=false \
-  --set grafana.env.GF_AUTH_ANONYMOUS_ENABLED=true \
-  --set grafana.env.GF_AUTH_ANONYMOUS_ORG_ROLE=Admin \
-  --set grafana.env.GF_AUTH_BASIC_ENABLED=false
+  -f helm/monitoring/grafanaValues.yaml \
+  -n monitoring
 
 # =========================
 # 9.1 ServiceMonitors
