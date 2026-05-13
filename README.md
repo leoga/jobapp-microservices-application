@@ -12,7 +12,7 @@ Make sure Docker is running, then:
 
 ```bash
 git clone https://github.com/leoga/jobapp-microservices-application
-cd jobapp-microservices-application/deploy/docker
+cd jobapp-microservices-application/deploy/docker-job
 docker compose up -d
 ```
 
